@@ -29,11 +29,11 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 2. Выбор режима ВО ВСЮ ШИРИНУ виджета -->
+    <!-- 2. Увеличенная строка выбора режима (во всю ширину) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="36dp"
-        android:layout_marginTop="8dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
         android:background="@drawable/bg_widget_selector"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -41,12 +41,12 @@
 
         <TextView
             android:id="@+id/widget_btn_prev_technique"
-            android:layout_width="36dp"
+            android:layout_width="40dp"
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="◄"
             android:textColor="#00E5FF"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -59,27 +59,26 @@
             android:maxLines="1"
             android:text="Квадратное дыхание (4-4-4-4)"
             android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widget_btn_next_technique"
-            android:layout_width="36dp"
+            android:layout_width="40dp"
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="►"
             android:textColor="#00E5FF"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 3. Кнопки ЗАПУСК и SOS: Занимают ВСЮ оставшуюся высоту карточки -->
+    <!-- 3. Аккуратные кнопки ЗАПУСК и SOS пропорциональной высоты -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_weight="1"
-        android:gravity="center"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
