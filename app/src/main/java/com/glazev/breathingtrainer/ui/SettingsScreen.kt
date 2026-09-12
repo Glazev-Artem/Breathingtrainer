@@ -2,6 +2,7 @@ package com.glazev.breathingtrainer.ui
 
 import android.app.Activity
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
@@ -35,8 +36,20 @@ import com.glazev.breathingtrainer.ui.components.HistoryDialog
 import com.glazev.breathingtrainer.ui.components.InfoDialog
 import com.glazev.breathingtrainer.ui.components.SettingsDialog
 import com.glazev.breathingtrainer.ui.theme.*
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.glazev.breathingtrainer.BuildConfig
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.yandex.authsdk.YandexAuthSdk
+import com.yandex.authsdk.YandexAuthOptions
+import com.yandex.authsdk.YandexAuthSdkContract
+import com.yandex.authsdk.YandexAuthLoginOptions
+import com.yandex.authsdk.YandexAuthResult
+import com.vk.id.VKID
+import com.vk.id.AccessToken
+import com.vk.id.VKIDAuthFail
+import com.vk.id.auth.AuthCodeData
+import com.vk.id.auth.VKIDAuthCallback
 
 @Composable
 fun SettingsScreen(
@@ -55,6 +68,9 @@ fun SettingsScreen(
     var showHistoryDialog by remember { mutableStateOf(false) }
     var newPresetName by remember { mutableStateOf("") }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val yandexAuthOptions = remember(context) { YandexAuthOptions(context) }
+
     val googleAuthLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -64,6 +80,22 @@ fun SettingsScreen(
                 val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
                 account.idToken?.let { viewModel.signInWithGoogle(it) }
             } catch (e: Exception) {}
+        }
+    }
+
+    val yandexAuthLauncher = rememberLauncherForActivityResult(
+        contract = YandexAuthSdkContract(yandexAuthOptions)
+    ) { result ->
+        when (result) {
+            is YandexAuthResult.Success -> {
+                viewModel.signInWithYandexToken(result.token.value)
+            }
+            is YandexAuthResult.Failure -> {
+                Log.e("YandexAuth", "Yandex sign in failed", result.exception)
+            }
+            is YandexAuthResult.Cancelled -> {
+                Log.d("YandexAuth", "Yandex sign in cancelled")
+            }
         }
     }
 
@@ -287,8 +319,27 @@ fun SettingsScreen(
                     val client = GoogleSignIn.getClient(context, gso)
                     googleAuthLauncher.launch(client.signInIntent)
                 },
-                onSignInYandex = { viewModel.signInWithYandex() },
-                onSignInVK = { viewModel.signInWithVK() },
+                onSignInYandex = {
+                    yandexAuthLauncher.launch(YandexAuthLoginOptions())
+                },
+                onSignInVK = {
+                    try {
+                        VKID.instance.authorize(
+                            lifecycleOwner = lifecycleOwner,
+                            callback = object : VKIDAuthCallback {
+                                override fun onAuth(accessToken: AccessToken) {
+                                    viewModel.signInWithVKToken(accessToken.token, accessToken.userID.toString())
+                                }
+                                override fun onAuthCode(data: AuthCodeData, isCompletion: Boolean) {}
+                                override fun onFail(fail: VKIDAuthFail) {
+                                    Log.e("VKIDAuth", "VK ID sign in failed: $fail")
+                                }
+                            }
+                        )
+                    } catch (e: Exception) {
+                        Log.e("VKIDAuth", "VK ID launch error", e)
+                    }
+                },
                 onSignOut = { viewModel.signOut() },
                 onSetReminder = { h, m -> viewModel.setReminder(h, m) },
                 onCancelReminder = { viewModel.cancelReminder() },

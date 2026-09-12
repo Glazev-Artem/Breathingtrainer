@@ -13,4 +13,8 @@
         Где взять: Firebase Console -> Authentication -> Sign-in method -> Google (edit) -> Web SDK configuration
     -->
     <string name="default_web_client_id">922903918125-819jsb9qrf2qmc81n6d8vopl6m4njpdr.apps.googleusercontent.com</string>
+
+    <!-- VK ID Configuration -->
+    <integer name="vk_app_id">0</integer>
+    <string name="vk_client_secret">placeholder</string>
 </resources>

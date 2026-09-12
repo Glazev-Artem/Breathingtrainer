@@ -27,14 +27,25 @@ import com.glazev.breathingtrainer.ui.components.InfoDialog
 import com.glazev.breathingtrainer.ui.components.SettingsDialog
 import com.glazev.breathingtrainer.ui.components.HistoryDialog
 import android.app.Activity
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.glazev.breathingtrainer.model.PhaseType
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.vk.id.AccessToken
+import com.vk.id.VKID
+import com.vk.id.VKIDAuthFail
+import com.vk.id.auth.AuthCodeData
+import com.vk.id.auth.VKIDAuthCallback
+import com.yandex.authsdk.YandexAuthLoginOptions
+import com.yandex.authsdk.YandexAuthOptions
+import com.yandex.authsdk.YandexAuthResult
+import com.yandex.authsdk.YandexAuthSdkContract
 import kotlin.math.ceil
 
 @Suppress("DEPRECATION")
@@ -55,6 +66,9 @@ fun BreathingScreen(
         onBackClick()
     }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val yandexAuthOptions = remember(context) { YandexAuthOptions(context) }
+
     val googleAuthLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -64,6 +78,22 @@ fun BreathingScreen(
                 val account = task.getResult(ApiException::class.java)
                 account.idToken?.let { viewModel.signInWithGoogle(it) }
             } catch (_: Exception) {}
+        }
+    }
+
+    val yandexAuthLauncher = rememberLauncherForActivityResult(
+        contract = YandexAuthSdkContract(yandexAuthOptions)
+    ) { result ->
+        when (result) {
+            is YandexAuthResult.Success -> {
+                viewModel.signInWithYandexToken(result.token.value)
+            }
+            is YandexAuthResult.Failure -> {
+                Log.e("YandexAuth", "Yandex sign in failed", result.exception)
+            }
+            is YandexAuthResult.Cancelled -> {
+                Log.d("YandexAuth", "Yandex sign in cancelled")
+            }
         }
     }
     
@@ -435,8 +465,27 @@ fun BreathingScreen(
                     val client = GoogleSignIn.getClient(context, gso)
                     googleAuthLauncher.launch(client.signInIntent)
                 },
-                onSignInYandex = { viewModel.signInWithYandex() },
-                onSignInVK = { viewModel.signInWithVK() },
+                onSignInYandex = {
+                    yandexAuthLauncher.launch(YandexAuthLoginOptions())
+                },
+                onSignInVK = {
+                    try {
+                        VKID.instance.authorize(
+                            lifecycleOwner = lifecycleOwner,
+                            callback = object : VKIDAuthCallback {
+                                override fun onAuth(accessToken: AccessToken) {
+                                    viewModel.signInWithVKToken(accessToken.token, accessToken.userID.toString())
+                                }
+                                override fun onAuthCode(data: AuthCodeData, isCompletion: Boolean) {}
+                                override fun onFail(fail: VKIDAuthFail) {
+                                    Log.e("VKIDAuth", "VK ID sign in failed: $fail")
+                                }
+                            }
+                        )
+                    } catch (e: Exception) {
+                        Log.e("VKIDAuth", "VK ID launch error", e)
+                    }
+                },
                 onSignOut = { viewModel.signOut() },
                 onSetReminder = { h, m -> viewModel.setReminder(h, m) },
                 onCancelReminder = { viewModel.cancelReminder() },

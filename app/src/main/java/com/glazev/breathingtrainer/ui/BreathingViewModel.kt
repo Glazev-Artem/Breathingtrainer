@@ -1149,32 +1149,36 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
             }
     }
 
-    fun signInWithYandex(email: String = "user@yandex.ru") {
+    fun signInWithYandexToken(yandexToken: String) {
+        Log.d("YandexAuth", "Received Yandex Auth Token successfully")
+        val label = "Яндекс (Token: ${yandexToken.take(8)}...)"
         val current = auth.currentUser
         if (current == null) {
             auth.signInAnonymously().addOnSuccessListener {
-                _uiState.update { it.copy(userEmail = email) }
+                _uiState.update { it.copy(userEmail = label) }
                 syncWithCloud()
             }.addOnFailureListener {
-                _uiState.update { it.copy(userEmail = email) }
+                _uiState.update { it.copy(userEmail = label) }
             }
         } else {
-            _uiState.update { it.copy(userEmail = email) }
+            _uiState.update { it.copy(userEmail = label) }
             syncWithCloud()
         }
     }
 
-    fun signInWithVK(email: String = "user@vk.com") {
+    fun signInWithVKToken(accessToken: String, userId: String) {
+        Log.d("VKIDAuth", "Received VK ID Token for user $userId")
+        val label = "VK ID ($userId)"
         val current = auth.currentUser
         if (current == null) {
             auth.signInAnonymously().addOnSuccessListener {
-                _uiState.update { it.copy(userEmail = email) }
+                _uiState.update { it.copy(userEmail = label) }
                 syncWithCloud()
             }.addOnFailureListener {
-                _uiState.update { it.copy(userEmail = email) }
+                _uiState.update { it.copy(userEmail = label) }
             }
         } else {
-            _uiState.update { it.copy(userEmail = email) }
+            _uiState.update { it.copy(userEmail = label) }
             syncWithCloud()
         }
     }

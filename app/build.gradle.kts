@@ -30,11 +30,22 @@ android {
         val bannerAdId = localProperties.getProperty("YANDEX_BANNER_AD_ID") ?: ""
         val squareAdId = localProperties.getProperty("YANDEX_SQUARE_AD_ID") ?: ""
         val interstitialAdId = localProperties.getProperty("YANDEX_INTERSTITIAL_AD_ID") ?: ""
+        val yandexClientId = localProperties.getProperty("YANDEX_CLIENT_ID") ?: ""
+        val vkAppId = localProperties.getProperty("VK_APP_ID") ?: ""
+        val vkClientSecret = localProperties.getProperty("VK_CLIENT_SECRET") ?: ""
 
         buildConfigField("String", "APPMETRICA_API_KEY", "\"$appMetricaKey\"")
         buildConfigField("String", "YANDEX_BANNER_AD_ID", "\"$bannerAdId\"")
         buildConfigField("String", "YANDEX_SQUARE_AD_ID", "\"$squareAdId\"")
         buildConfigField("String", "YANDEX_INTERSTITIAL_AD_ID", "\"$interstitialAdId\"")
+        buildConfigField("String", "YANDEX_CLIENT_ID", "\"$yandexClientId\"")
+        buildConfigField("String", "VK_APP_ID", "\"$vkAppId\"")
+
+        manifestPlaceholders["YANDEX_CLIENT_ID"] = yandexClientId.ifEmpty { "placeholder" }
+        manifestPlaceholders["VKIDClientID"] = vkAppId.ifEmpty { "0" }
+        manifestPlaceholders["VKIDClientSecret"] = vkClientSecret.ifEmpty { "secret" }
+        manifestPlaceholders["VKIDRedirectHost"] = "vk.com"
+        manifestPlaceholders["VKIDRedirectScheme"] = "vk" + (vkAppId.ifEmpty { "0" })
     }
 
     buildTypes {
@@ -78,9 +89,13 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
     
-    // Реклама и Аналитика Яндекса
+    // Реклама и Авторизация Яндекса
     implementation(libs.yandex.mobileads)
+    implementation(libs.yandex.authsdk)
     implementation(libs.appmetrica.sdk)
+    
+    // VK ID SDK
+    implementation(libs.vk.id)
     
     // RuStore Pay SDK
     implementation(libs.rustore.pay)
