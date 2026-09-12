@@ -366,9 +366,21 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
             })
             currentAd.show(activity)
         } else {
-            Log.d("Ads", "No ad loaded, starting training immediately")
+            Log.d("Ads", "Ad not ready yet, loading and showing on completion...")
+            interstitialAdLoader.setAdLoadListener(object : InterstitialAdLoadListener {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAd = ad
+                    setupAdLoader()
+                    startTrainingWithAd(activity, onAdDismissed)
+                }
+
+                override fun onAdFailedToLoad(error: AdRequestError) {
+                    Log.e("Ads", "Ad load failed: ${error.description}")
+                    setupAdLoader()
+                    onAdDismissed()
+                }
+            })
             loadInterstitialAd()
-            onAdDismissed()
         }
     }
 
