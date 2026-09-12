@@ -48,9 +48,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import ru.rustore.sdk.pay.RuStorePay
-import ru.rustore.sdk.pay.model.PaymentResult
-import ru.rustore.sdk.pay.model.PurchaseState
+import ru.rustore.sdk.pay.RuStorePayClient
+import ru.rustore.sdk.pay.model.Product
+import ru.rustore.sdk.pay.model.ProductId
+import ru.rustore.sdk.pay.model.ProductPurchase
+import ru.rustore.sdk.pay.model.ProductPurchaseParams
+import ru.rustore.sdk.pay.model.ProductPurchaseResult
+import ru.rustore.sdk.pay.model.ProductPurchaseStatus
+import ru.rustore.sdk.pay.model.SubscriptionPurchase
+import ru.rustore.sdk.pay.model.SubscriptionPurchaseStatus
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
@@ -467,15 +473,16 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
     fun loadProductsInfo() {
         val monthlyId = getApplication<Application>().getString(R.string.product_id_monthly)
         val lifetimeId = getApplication<Application>().getString(R.string.product_id_lifetime)
-        val productIds = listOf(monthlyId, lifetimeId)
+        val productIds = listOf(ProductId(monthlyId), ProductId(lifetimeId))
         
-        RuStorePay.products.getProducts(productIds)
+        RuStorePayClient.instance.getProductInteractor().getProducts(productIds)
             .addOnSuccessListener { productList ->
                 productList.forEach { product ->
+                    val priceText = product.amountLabel.value
                     if (product.productId.value == monthlyId) {
-                        _uiState.update { it.copy(monthlyPrice = product.priceLabel ?: "") }
+                        _uiState.update { it.copy(monthlyPrice = priceText) }
                     } else if (product.productId.value == lifetimeId) {
-                        _uiState.update { it.copy(lifetimePrice = product.priceLabel ?: "") }
+                        _uiState.update { it.copy(lifetimePrice = priceText) }
                     }
                 }
             }
@@ -486,12 +493,22 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
         val monthlyId = getApplication<Application>().getString(R.string.product_id_monthly)
         val lifetimeId = getApplication<Application>().getString(R.string.product_id_lifetime)
         
-        RuStorePay.purchases.getPurchases()
+        RuStorePayClient.instance.getPurchaseInteractor().getPurchases()
             .addOnSuccessListener { purchases ->
                 val hasPremium = purchases.any { purchase ->
-                    val pid = purchase.productId.value
-                    (pid == monthlyId || pid == lifetimeId) &&
-                    (purchase.purchaseState == PurchaseState.CONFIRMED || purchase.purchaseState == PurchaseState.PAID)
+                    when (purchase) {
+                        is ProductPurchase -> {
+                            val pid = purchase.productId.value
+                            (pid == monthlyId || pid == lifetimeId) &&
+                            (purchase.status == ProductPurchaseStatus.CONFIRMED || purchase.status == ProductPurchaseStatus.PAID)
+                        }
+                        is SubscriptionPurchase -> {
+                            val pid = purchase.productId.value
+                            (pid == monthlyId || pid == lifetimeId) &&
+                            purchase.status == SubscriptionPurchaseStatus.ACTIVE
+                        }
+                        else -> false
+                    }
                 }
                 setPremiumStatus(hasPremium)
             }
@@ -514,25 +531,11 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun purchaseProduct(productId: String) {
-        RuStorePay.purchases.purchaseProduct(productId)
+        val params = ProductPurchaseParams(productId = ProductId(productId))
+        RuStorePayClient.instance.getPurchaseInteractor().purchase(params)
             .addOnSuccessListener { result ->
-                when (result) {
-                    is PaymentResult.Success -> {
-                        Log.d("RuStorePay", "Purchase success: ${result.orderId}")
-                        checkPurchases()
-                    }
-                    is PaymentResult.Failure -> {
-                        val errorCode = result.errorCode
-                        Log.e("RuStorePay", "Purchase failure: code $errorCode")
-                        Toast.makeText(getApplication(), "Ошибка оплаты: $errorCode", Toast.LENGTH_SHORT).show()
-                    }
-                    is PaymentResult.Cancelled -> {
-                        Log.d("RuStorePay", "Purchase cancelled by user")
-                    }
-                    else -> {
-                        Log.d("RuStorePay", "Purchase result: $result")
-                    }
-                }
+                Log.d("RuStorePay", "Purchase success: ${result.orderId?.value ?: result.purchaseId.value}")
+                checkPurchases()
             }
             .addOnFailureListener { error ->
                 Log.e("RuStorePay", "Purchase task failed: ${error.message}")
@@ -553,7 +556,7 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun handleDeeplink(intent: Intent) {
         try {
-            RuStorePay.onNewIntent(intent)
+            RuStorePayClient.instance.getIntentInteractor().proceedIntent(intent)
         } catch (e: Exception) {
             Log.e("RuStorePay", "Error handling deeplink: ${e.message}")
         }
