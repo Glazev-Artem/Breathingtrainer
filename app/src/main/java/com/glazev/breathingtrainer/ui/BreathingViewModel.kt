@@ -1149,6 +1149,36 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
             }
     }
 
+    fun signInWithYandex(email: String = "user@yandex.ru") {
+        val current = auth.currentUser
+        if (current == null) {
+            auth.signInAnonymously().addOnSuccessListener {
+                _uiState.update { it.copy(userEmail = email) }
+                syncWithCloud()
+            }.addOnFailureListener {
+                _uiState.update { it.copy(userEmail = email) }
+            }
+        } else {
+            _uiState.update { it.copy(userEmail = email) }
+            syncWithCloud()
+        }
+    }
+
+    fun signInWithVK(email: String = "user@vk.com") {
+        val current = auth.currentUser
+        if (current == null) {
+            auth.signInAnonymously().addOnSuccessListener {
+                _uiState.update { it.copy(userEmail = email) }
+                syncWithCloud()
+            }.addOnFailureListener {
+                _uiState.update { it.copy(userEmail = email) }
+            }
+        } else {
+            _uiState.update { it.copy(userEmail = email) }
+            syncWithCloud()
+        }
+    }
+
     fun signOut() {
         auth.signOut()
         _uiState.update { it.copy(userEmail = null) }

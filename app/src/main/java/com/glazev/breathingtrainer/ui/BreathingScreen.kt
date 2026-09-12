@@ -427,7 +427,7 @@ fun BreathingScreen(
                 onPurchaseLifetime = { viewModel.purchaseLifetime() },
                 onRestorePurchases = { viewModel.checkPurchases() },
                 onOpenSubscriptions = { viewModel.openRuStoreSubscriptions() },
-                onSignIn = {
+                onSignInGoogle = {
                     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                         .requestIdToken(context.getString(R.string.default_web_client_id))
                         .requestEmail()
@@ -435,6 +435,8 @@ fun BreathingScreen(
                     val client = GoogleSignIn.getClient(context, gso)
                     googleAuthLauncher.launch(client.signInIntent)
                 },
+                onSignInYandex = { viewModel.signInWithYandex() },
+                onSignInVK = { viewModel.signInWithVK() },
                 onSignOut = { viewModel.signOut() },
                 onSetReminder = { h, m -> viewModel.setReminder(h, m) },
                 onCancelReminder = { viewModel.cancelReminder() },

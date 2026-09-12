@@ -166,7 +166,9 @@ fun SettingsDialog(
     onPurchaseLifetime: () -> Unit,
     onRestorePurchases: () -> Unit,
     onOpenSubscriptions: () -> Unit,
-    onSignIn: () -> Unit,
+    onSignInGoogle: () -> Unit,
+    onSignInYandex: () -> Unit,
+    onSignInVK: () -> Unit,
     onSignOut: () -> Unit,
     onSetReminder: (Int, Int) -> Unit,
     onCancelReminder: () -> Unit,
@@ -317,20 +319,43 @@ fun SettingsDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = White.copy(alpha = 0.1f))
 
-                // РАЗДЕЛ: СИНХРОНИЗАЦИЯ (GOOGLE)
-                Text("СИНХРОНИЗАЦИЯ", color = LightCyan, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                // РАЗДЕЛ: СИНХРОНИЗАЦИЯ И ВХОД
+                Text("СИНХРОНИЗАЦИЯ И ВХОД", color = LightCyan, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 if (userEmail == null) {
-                    Button(
-                        onClick = onSignIn,
-                        colors = ButtonDefaults.buttonColors(containerColor = TranslucentWhite),
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_logo), contentDescription = null, tint = White, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Войти через Google", color = White)
+                        Button(
+                            onClick = onSignInYandex,
+                            colors = ButtonDefaults.buttonColors(containerColor = TranslucentWhite),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Войти через Яндекс", color = White, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Button(
+                            onClick = onSignInVK,
+                            colors = ButtonDefaults.buttonColors(containerColor = TranslucentWhite),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Войти через VK ID", color = White, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Button(
+                            onClick = onSignInGoogle,
+                            colors = ButtonDefaults.buttonColors(containerColor = TranslucentWhite),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(painter = painterResource(id = R.drawable.ic_logo), contentDescription = null, tint = White, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Войти через Google", color = White)
+                        }
                     }
                 } else {
                     Row(
