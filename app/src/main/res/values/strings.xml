@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Тренажер дыхания</string>
+
+    <!-- ID приложения из консоли RuStore (Console ID) -->
+    <string name="rustore_app_id">2063701247</string>
+
+    <!-- ID товаров из консоли RuStore -->
+    <string name="product_id_monthly">sub_monthly</string>
+    <string name="product_id_lifetime">premium_lifetime</string>
+
+    <!--
+        Google Web Client ID.
+        Где взять: Firebase Console -> Authentication -> Sign-in method -> Google (edit) -> Web SDK configuration
+    -->
+    <string name="default_web_client_id">922903918125-819jsb9qrf2qmc81n6d8vopl6m4njpdr.apps.googleusercontent.com</string>
+</resources>

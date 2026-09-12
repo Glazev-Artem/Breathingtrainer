@@ -1,0 +1,31 @@
+*.iml
+.gradle
+/local.properties
+local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+.kotlin
+
+# Memory heap dumps
+*.hprof
+
+# Sensitive configurations & keys
+google-services.json
+**/google-services.json
+
+# Build outputs & Signing keys
+*.apk
+*.aab
+*.jks
+*.keystore
+app/release/
+release/

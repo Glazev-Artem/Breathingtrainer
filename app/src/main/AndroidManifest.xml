@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Разрешения для защиты платежей (антифрод) из инструкции -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- Уведомления и будильники -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Вибрация -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Разрешение для RuStore Billing SDK (для Android 11+) -->
+    <queries>
+        <package android:name="ru.vk.store" />
+        <intent>
+            <action android:name="ru.rustore.sdk.billingclient.service.BillingService.BIND" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".MyApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.BreathingTrainer"
+        tools:targetApi="31">
+
+        <!-- MainActivity согласно инструкции (singleTop + Deeplink) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.BreathingTrainer"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deeplink для возврата из банковских приложений -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="glazevbreathingpay" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".ui.ReminderReceiver"
+            android:exported="false" />
+
+        <!-- Обязательные метаданные согласно инструкции -->
+        <meta-data
+            android:name="console_app_id_value"
+            android:value="@string/rustore_app_id" />
+
+        <meta-data
+            android:name="sdk_pay_scheme_value"
+            android:value="glazevbreathingpay" />
+
+    </application>
+
+</manifest>
