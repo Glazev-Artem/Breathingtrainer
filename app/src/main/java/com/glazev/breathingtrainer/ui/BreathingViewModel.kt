@@ -26,6 +26,7 @@ import com.glazev.breathingtrainer.AdConfig
 import com.glazev.breathingtrainer.R
 import com.glazev.breathingtrainer.model.BreathingPhase
 import com.glazev.breathingtrainer.model.BreathingTechnique
+import com.glazev.breathingtrainer.model.DefaultTechniques
 import com.glazev.breathingtrainer.model.PhaseType
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
@@ -368,6 +369,33 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
             Log.d("Ads", "No ad loaded, starting training immediately")
             loadInterstitialAd()
             onAdDismissed()
+        }
+    }
+
+    fun selectTechniqueById(id: String) {
+        val allTechniques = DefaultTechniques.list + _uiState.value.userPresets
+        val found = allTechniques.find { it.id == id } ?: DefaultTechniques.SquareBreathing
+        selectPreset(found)
+    }
+
+    fun handleWidgetStart(
+        techniqueId: String,
+        isSos: Boolean,
+        activity: Activity,
+        onNavigateToTraining: () -> Unit
+    ) {
+        selectTechniqueById(techniqueId)
+
+        if (isSos) {
+            // SOS режим: Запускается моментально БЕЗ РЕКЛАМЫ для всех
+            onNavigateToTraining()
+            startTraining()
+        } else {
+            // Обычный запуск: Если нет подписки, показываем рекламу
+            startTrainingWithAd(activity) {
+                onNavigateToTraining()
+                startTraining()
+            }
         }
     }
 

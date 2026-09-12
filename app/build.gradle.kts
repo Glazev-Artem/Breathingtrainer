@@ -41,6 +41,10 @@ android {
         buildConfigField("String", "YANDEX_CLIENT_ID", "\"$yandexClientId\"")
         buildConfigField("String", "VK_APP_ID", "\"$vkAppId\"")
 
+        val vkAppIdInt = vkAppId.toIntOrNull() ?: 0
+        resValue("integer", "vk_app_id", vkAppIdInt.toString())
+        resValue("string", "vk_client_secret", vkClientSecret.ifEmpty { "placeholder" })
+
         manifestPlaceholders["YANDEX_CLIENT_ID"] = yandexClientId.ifEmpty { "placeholder" }
         manifestPlaceholders["VKIDClientID"] = vkAppId.ifEmpty { "0" }
         manifestPlaceholders["VKIDClientSecret"] = vkClientSecret.ifEmpty { "secret" }

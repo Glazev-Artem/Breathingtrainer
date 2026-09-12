@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import com.glazev.breathingtrainer.ui.BreathingViewModel
 import com.glazev.breathingtrainer.ui.NavGraph
 import com.glazev.breathingtrainer.ui.theme.BreathingTrainerTheme
+import com.glazev.breathingtrainer.widget.BreathingAppWidgetProvider
 import com.yandex.mobile.ads.common.MobileAds
 
 class MainActivity : ComponentActivity() {
@@ -23,7 +24,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BreathingTrainerTheme {
-                NavGraph(viewModel = viewModel)
+                NavGraph(
+                    viewModel = viewModel,
+                    onStartFromWidget = { navigateToTraining ->
+                        intent?.let { handleWidgetIntent(it, navigateToTraining) }
+                    }
+                )
             }
         }
         
@@ -36,5 +42,22 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         // Обработка возврата из платежной системы (deeplink)
         viewModel.handleDeeplink(intent)
+    }
+
+    private fun handleWidgetIntent(intent: Intent, onNavigateToTraining: () -> Unit) {
+        val action = intent.action ?: return
+        if (action == BreathingAppWidgetProvider.ACTION_START_WIDGET_TECHNIQUE ||
+            action == BreathingAppWidgetProvider.ACTION_START_SOS) {
+            val techniqueId = intent.getStringExtra(BreathingAppWidgetProvider.EXTRA_TECHNIQUE_ID) ?: "square"
+            val isSos = intent.getBooleanExtra(BreathingAppWidgetProvider.EXTRA_IS_SOS, false)
+            
+            viewModel.handleWidgetStart(
+                techniqueId = techniqueId,
+                isSos = isSos,
+                activity = this,
+                onNavigateToTraining = onNavigateToTraining
+            )
+            intent.action = null
+        }
     }
 }

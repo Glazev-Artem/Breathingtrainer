@@ -66,6 +66,20 @@
             android:name=".ui.ReminderReceiver"
             android:exported="false" />
 
+        <!-- Виджет 4x2 для рабочего стола -->
+        <receiver
+            android:name=".widget.BreathingAppWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.glazev.breathingtrainer.ACTION_PREV_TECHNIQUE" />
+                <action android:name="com.glazev.breathingtrainer.ACTION_NEXT_TECHNIQUE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/breathing_widget_info" />
+        </receiver>
+
         <!-- Обязательные метаданные согласно инструкции -->
         <meta-data
             android:name="console_app_id_value"
