@@ -23,9 +23,16 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+        var startDestination = "settings"
+        val action = intent?.action
+        if (action == BreathingAppWidgetProvider.ACTION_START_WIDGET_TECHNIQUE ||
+            action == BreathingAppWidgetProvider.ACTION_START_SOS) {
+            startDestination = "training"
+        }
+
         setContent {
             BreathingTrainerTheme {
-                NavGraph(viewModel = viewModel)
+                NavGraph(viewModel = viewModel, startDestination = startDestination)
             }
         }
         

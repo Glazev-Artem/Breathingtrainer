@@ -48,7 +48,7 @@ class BreathingAppWidgetProvider : AppWidgetProvider() {
         }
 
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
-            val views = RemoteViews(context.packageName, R.layout.widget_breathing_4x2)
+            val views = RemoteViews(context.packageName, R.layout.widget_breathing_4x1)
             val index = getSelectedTechniqueIndex(context)
             val techniques = DefaultTechniques.list
             val selectedTechnique = if (index in techniques.indices) techniques[index] else DefaultTechniques.SquareBreathing
