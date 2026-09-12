@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="@drawable/bg_widget_card"
     android:orientation="vertical"
     android:padding="12dp">
@@ -29,11 +29,11 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 2. Увеличенная строка выбора режима (во всю ширину) -->
+    <!-- 2. Выбор режима во всю ширину -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="10dp"
+        android:layout_height="42dp"
+        android:layout_marginTop="8dp"
         android:background="@drawable/bg_widget_selector"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -41,12 +41,12 @@
 
         <TextView
             android:id="@+id/widget_btn_prev_technique"
-            android:layout_width="40dp"
+            android:layout_width="38dp"
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="◄"
             android:textColor="#00E5FF"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <TextView
@@ -64,21 +64,22 @@
 
         <TextView
             android:id="@+id/widget_btn_next_technique"
-            android:layout_width="40dp"
+            android:layout_width="38dp"
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="►"
             android:textColor="#00E5FF"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 3. Аккуратные кнопки ЗАПУСК и SOS пропорциональной высоты -->
+    <!-- 3. Кнопки ЗАПУСК и SOS заставляют карточку идеально заполнять рамку 4x2 без пустот -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="10dp"
-        android:gravity="center_vertical"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:gravity="center"
         android:orientation="horizontal">
 
         <TextView
