@@ -24,27 +24,20 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BreathingTrainerTheme {
-                NavGraph(
-                    viewModel = viewModel,
-                    onStartFromWidget = { navigateToTraining ->
-                        intent?.let { handleWidgetIntent(it, navigateToTraining) }
-                    }
-                )
+                NavGraph(viewModel = viewModel)
             }
         }
         
-        // Обработка интента при холодном старте
-        intent?.let { viewModel.handleDeeplink(it) }
+        intent?.let { handleAllIntents(it) }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        // Обработка возврата из платежной системы (deeplink)
-        viewModel.handleDeeplink(intent)
+        handleAllIntents(intent)
     }
 
-    private fun handleWidgetIntent(intent: Intent, onNavigateToTraining: () -> Unit) {
+    private fun handleAllIntents(intent: Intent) {
         val action = intent.action ?: return
         if (action == BreathingAppWidgetProvider.ACTION_START_WIDGET_TECHNIQUE ||
             action == BreathingAppWidgetProvider.ACTION_START_SOS) {
@@ -54,10 +47,11 @@ class MainActivity : ComponentActivity() {
             viewModel.handleWidgetStart(
                 techniqueId = techniqueId,
                 isSos = isSos,
-                activity = this,
-                onNavigateToTraining = onNavigateToTraining
+                activity = this
             )
             intent.action = null
+        } else {
+            viewModel.handleDeeplink(intent)
         }
     }
 }

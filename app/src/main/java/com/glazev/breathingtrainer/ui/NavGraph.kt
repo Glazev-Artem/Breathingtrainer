@@ -9,16 +9,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun NavGraph(
-    viewModel: BreathingViewModel,
-    onStartFromWidget: (onNavigateToTraining: () -> Unit) -> Unit = {}
-) {
+fun NavGraph(viewModel: BreathingViewModel) {
     val navController = rememberNavController()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        onStartFromWidget {
-            navController.navigate("training")
+        viewModel.navigationEvent.collect { destination ->
+            if (destination == "training") {
+                navController.navigate("training") {
+                    popUpTo("settings") { inclusive = false }
+                }
+            }
         }
     }
 
@@ -31,7 +32,7 @@ fun NavGraph(
                     if (activity != null) {
                         viewModel.startTrainingWithAd(activity) {
                             navController.navigate("training")
-                            // Сразу запускаем логику тренировки (подготовительный отсчет)
+                            // Сразу запускаем логику тренировки
                             viewModel.startTraining()
                         }
                     }
