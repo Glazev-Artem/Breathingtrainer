@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
         MobileAds.initialize(this) {}
 
         enableEdgeToEdge()
+
         setContent {
             BreathingTrainerTheme {
                 NavGraph(viewModel = viewModel)

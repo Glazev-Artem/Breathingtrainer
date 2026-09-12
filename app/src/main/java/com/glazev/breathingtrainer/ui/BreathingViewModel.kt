@@ -42,11 +42,10 @@ import com.yandex.mobile.ads.interstitial.InterstitialAdLoadListener
 import com.yandex.mobile.ads.interstitial.InterstitialAdLoader
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -160,8 +159,8 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
     ))
     val uiState: StateFlow<BreathingUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableSharedFlow<String>()
-    val navigationEvent: SharedFlow<String> = _navigationEvent.asSharedFlow()
+    private val _navigationEvent = Channel<String>(Channel.BUFFERED)
+    val navigationEvent = _navigationEvent.receiveAsFlow()
 
     private var timerJob: Job? = null
     private var countdownJob: Job? = null
@@ -403,21 +402,21 @@ class BreathingViewModel(application: Application) : AndroidViewModel(applicatio
     ) {
         selectTechniqueById(techniqueId)
 
+        // Независимо от режима, мы СРАЗУ переключаемся на экран тренировки, 
+        // чтобы пользователь не видел "лишних экранов" (настроек).
+        viewModelScope.launch {
+            _navigationEvent.send("training")
+        }
+
         if (isSos) {
-            // SOS режим: Запускается моментально БЕЗ РЕКЛАМЫ для всех пользователей
+            // SOS режим: Запускается моментально БЕЗ РЕКЛАМЫ
             stopTraining()
             startTraining()
-            viewModelScope.launch {
-                _navigationEvent.emit("training")
-            }
         } else {
-            // Обычный запуск: Если нет подписки, показываем рекламу
+            // Обычный запуск: Ждем загрузки рекламы (пользователь видит экран дыхания, но таймер стоит)
             startTrainingWithAd(activity) {
                 stopTraining()
                 startTraining()
-                viewModelScope.launch {
-                    _navigationEvent.emit("training")
-                }
             }
         }
     }
