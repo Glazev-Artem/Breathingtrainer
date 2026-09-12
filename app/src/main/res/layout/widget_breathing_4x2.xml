@@ -4,9 +4,10 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_widget_card"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="12dp"
+    android:weightSum="2.2">
 
-    <!-- 1. Переключатель техники (во всю ширину, растягивается по высоте) -->
+    <!-- 1. Переключатель техники (пропорция 1) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -50,12 +51,12 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 2. Кнопки ЗАПУСК и SOS (растягиваются по высоте) -->
+    <!-- 2. Кнопки ЗАПУСК и SOS (пропорция 1.2, чуть больше) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="6dp"
-        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1.2"
         android:gravity="center"
         android:orientation="horizontal">
 
@@ -63,26 +64,26 @@
             android:id="@+id/widget_btn_start"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginEnd="3dp"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:background="@drawable/bg_widget_start_btn"
             android:gravity="center"
             android:text="ЗАПУСК"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widget_btn_sos"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginStart="3dp"
+            android:layout_marginStart="4dp"
             android:layout_weight="1"
             android:background="@drawable/bg_widget_sos_btn"
             android:gravity="center"
             android:text="🆘 SOS (4-7-8)"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
 
