@@ -2,16 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Разрешения для защиты платежей (антифрод) из инструкции -->
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Сеть нужна авторизации, синхронизации, рекламе и платежам. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
+    <!-- Сенсорный экран не обязателен: приложение доступно планшетам/ChromeOS с мышью. -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
     <!-- Уведомления и будильники -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Вибрация -->
@@ -27,7 +27,7 @@
 
     <application
         android:name=".MyApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -35,17 +35,22 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BreathingTrainer"
-        tools:replace="android:allowBackup,android:dataExtractionRules,android:fullBackupContent"
         tools:targetApi="31">
+
+        <!-- Optional SDKs are initialized manually only after the user's privacy choice. -->
+        <provider
+            android:name="com.yandex.mobile.ads.core.initializer.MobileAdsInitializeProvider"
+            tools:node="remove" />
+        <provider
+            android:name="io.appmetrica.analytics.internal.PreloadInfoContentProvider"
+            tools:node="remove" />
 
         <!-- MainActivity согласно инструкции (singleTop + Deeplink) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:label="@string/app_name"
             android:theme="@style/Theme.BreathingTrainer"
-            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize">
 
             <intent-filter>
@@ -63,13 +68,19 @@
         </activity>
 
         <receiver
-            android:name=".ui.ReminderReceiver"
-            android:exported="false" />
+            android:name=".notifications.ReminderReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Виджет 4x2 для рабочего стола -->
         <receiver
             android:name=".widget.BreathingAppWidgetProvider"
-            android:exported="true">
+            android:exported="true"
+            android:process=":widget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.glazev.breathingtrainer.ACTION_PREV_TECHNIQUE" />

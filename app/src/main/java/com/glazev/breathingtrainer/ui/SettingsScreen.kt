@@ -32,14 +32,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.glazev.breathingtrainer.R
 import com.glazev.breathingtrainer.model.DefaultTechniques
+import com.glazev.breathingtrainer.privacy.PrivacyConsent
 import com.glazev.breathingtrainer.ui.components.HistoryDialog
 import com.glazev.breathingtrainer.ui.components.InfoDialog
 import com.glazev.breathingtrainer.ui.components.SettingsDialog
 import com.glazev.breathingtrainer.ui.theme.*
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.glazev.breathingtrainer.BuildConfig
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.yandex.authsdk.YandexAuthSdk
 import com.yandex.authsdk.YandexAuthOptions
 import com.yandex.authsdk.YandexAuthSdkContract
@@ -49,11 +48,14 @@ import com.vk.id.VKID
 import com.vk.id.AccessToken
 import com.vk.id.VKIDAuthFail
 import com.vk.id.auth.AuthCodeData
+import com.vk.id.auth.VKIDAuthParams
 import com.vk.id.auth.VKIDAuthCallback
 
 @Composable
 fun SettingsScreen(
     viewModel: BreathingViewModel,
+    privacyConsent: PrivacyConsent,
+    onPrivacyConsentChange: (PrivacyConsent) -> Unit,
     onStartClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -67,21 +69,12 @@ fun SettingsScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
     var newPresetName by remember { mutableStateOf("") }
+    val setReminder = rememberReminderSetter(viewModel)
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val yandexAuthOptions = remember(context) { YandexAuthOptions(context) }
 
-    val googleAuthLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
-                account.idToken?.let { viewModel.signInWithGoogle(it) }
-            } catch (e: Exception) {}
-        }
-    }
+    val signInWithGoogle = rememberGoogleCredentialSignIn(viewModel::signInWithGoogle)
 
     val yandexAuthLauncher = rememberLauncherForActivityResult(
         contract = YandexAuthSdkContract(yandexAuthOptions)
@@ -181,20 +174,18 @@ fun SettingsScreen(
                 } else {
                     Text("Режим Вима Хофа", color = LightCyan, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
-                    val retentionValues = remember { val list = mutableListOf<Int>(); for (i in 30..300 step 10) list.add(i); for (i in 360..1200 step 60) list.add(i); list }
-                    val currentIndex = retentionValues.indexOf(uiState.wimHofRetentionTime.toInt()).coerceAtLeast(0)
-                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        Text("Задержка после выдоха", color = White, fontSize = 12.sp)
-                        Slider(value = currentIndex.toFloat(), onValueChange = { index -> viewModel.updateWimHofRetention(retentionValues[index.toInt()].toFloat()) }, valueRange = 0f..(retentionValues.size - 1).toFloat(), colors = SliderDefaults.colors(thumbColor = LightCyan, activeTrackColor = LightCyan, inactiveTrackColor = GraySlider))
-                        val totalSec = uiState.wimHofRetentionTime.toInt(); val displayTime = if (totalSec < 60) "$totalSec сек" else "${totalSec / 60} мин ${totalSec % 60} сек"
-                        Text(displayTime, color = LightCyan, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-                    }
+                    Text(
+                        "После дыхательного цикла секундомер задержки идёт с нуля вверх. Ограничения по времени нет — завершите задержку нажатием.",
+                        color = White.copy(alpha = 0.75f),
+                        fontSize = 12.sp,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    )
                     BreathingSlider("Количество циклов", uiState.cycles.toFloat(), { viewModel.updateCycles(it.toInt()) }, 1f..10f, isInt = true)
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("Количество повторений", color = White, fontSize = 14.sp, modifier = Modifier.weight(1f))
-                    TextField(value = uiState.repetitions.toString(), onValueChange = { viewModel.updateRepetitions(it.toIntOrNull() ?: 0) }, modifier = Modifier.width(80.dp), colors = TextFieldDefaults.colors(focusedContainerColor = TranslucentWhite, unfocusedContainerColor = TranslucentWhite, focusedTextColor = White, unfocusedTextColor = White, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent), shape = RoundedCornerShape(8.dp))
+                    TextField(value = uiState.repetitions.toString(), onValueChange = { value -> value.toIntOrNull()?.let(viewModel::updateRepetitions) }, modifier = Modifier.width(80.dp), colors = TextFieldDefaults.colors(focusedContainerColor = TranslucentWhite, unfocusedContainerColor = TranslucentWhite, focusedTextColor = White, unfocusedTextColor = White, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent), shape = RoundedCornerShape(8.dp))
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -276,7 +267,7 @@ fun SettingsScreen(
                     Image(
                         painter = painterResource(id = R.drawable.btn_start), 
                         contentDescription = "Старт",
-                        modifier = Modifier.fillMaxSize().clickable(interactionSource = interactionSource, indication = null, onClick = { viewModel.startTrainingWithAd(context as Activity) { onStartClick() } }), 
+                        modifier = Modifier.fillMaxSize().clickable(interactionSource = interactionSource, indication = null, onClick = onStartClick),
                         contentScale = ContentScale.Fit
                     )
                 }
@@ -294,14 +285,17 @@ fun SettingsScreen(
                 history = uiState.trainingHistory,
                 reminderTime = uiState.reminderTime,
                 dayReminders = uiState.dayReminders,
-                onSetReminder = { h, m, date -> viewModel.setReminder(h, m, date) },
+                onSetReminder = setReminder,
                 onCancelReminder = { date -> viewModel.cancelReminder(date) },
                 onDismiss = { showHistoryDialog = false }
             ) 
         }
         if (showSettingsDialog) {
             SettingsDialog(
-                isPremium = uiState.isPremium, userEmail = uiState.userEmail, isSyncing = uiState.isSyncing,
+                isPremium = uiState.isPremium,
+                userEmail = uiState.userEmail,
+                authProviderLabel = uiState.authProviderLabel,
+                isSyncing = uiState.isSyncing,
                 monthlyPrice = uiState.monthlyPrice, lifetimePrice = uiState.lifetimePrice,
                 musicVolume = uiState.musicVolume, breathVolume = uiState.breathVolume,
                 vibrationEnabled = uiState.vibrationEnabled,
@@ -309,43 +303,51 @@ fun SettingsScreen(
                 finalSound = uiState.finalSound,
                 finalSoundVolume = uiState.finalSoundVolume,
                 availableFinalSounds = viewModel.finalSounds,
+                privacyConsent = privacyConsent,
                 onMusicVolumeChange = { viewModel.updateMusicVolume(it) }, onBreathVolumeChange = { viewModel.updateBreathVolume(it) },
                 onVibrationEnabledChange = { viewModel.updateVibrationEnabled(it) },
                 onPurchaseMonthly = { viewModel.purchaseMonthly() }, onPurchaseLifetime = { viewModel.purchaseLifetime() },
                 onRestorePurchases = { viewModel.checkPurchases() }, onOpenSubscriptions = { viewModel.openRuStoreSubscriptions() },
-                onSignInGoogle = {
-                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                        .requestIdToken(context.getString(R.string.default_web_client_id)).requestEmail().build()
-                    val client = GoogleSignIn.getClient(context, gso)
-                    googleAuthLauncher.launch(client.signInIntent)
-                },
+                onSignInGoogle = signInWithGoogle,
                 onSignInYandex = {
                     yandexAuthLauncher.launch(YandexAuthLoginOptions())
                 },
                 onSignInVK = {
                     try {
+                        val request = viewModel.beginVkAuthorization()
+                        val authParams = VKIDAuthParams.Builder().apply {
+                            codeChallenge = request.codeChallenge
+                            state = request.state
+                        }.build()
                         VKID.instance.authorize(
                             lifecycleOwner = lifecycleOwner,
                             callback = object : VKIDAuthCallback {
                                 override fun onAuth(accessToken: AccessToken) {
-                                    viewModel.signInWithVKToken(accessToken.token, accessToken.userID.toString())
+                                    viewModel.cancelVkAuthorization()
+                                    viewModel.signInWithVKToken(accessToken.token)
                                 }
-                                override fun onAuthCode(data: AuthCodeData, isCompletion: Boolean) {}
+                                override fun onAuthCode(data: AuthCodeData, isCompletion: Boolean) {
+                                    viewModel.signInWithVkAuthorizationCode(data.code, data.deviceId)
+                                }
                                 override fun onFail(fail: VKIDAuthFail) {
+                                    viewModel.cancelVkAuthorization()
                                     Log.e("VKIDAuth", "VK ID sign in failed: $fail")
                                 }
-                            }
+                            },
+                            params = authParams
                         )
                     } catch (e: Exception) {
+                        viewModel.cancelVkAuthorization()
                         Log.e("VKIDAuth", "VK ID launch error", e)
                     }
                 },
                 onSignOut = { viewModel.signOut() },
-                onSetReminder = { h, m -> viewModel.setReminder(h, m) },
+                onSetReminder = { h, m -> setReminder(h, m, null) },
                 onCancelReminder = { viewModel.cancelReminder() },
                 onAddCustomFinalSound = { viewModel.addCustomFinalSound(it) },
                 onUpdateFinalSound = { viewModel.updateFinalSound(it) },
                 onUpdateFinalSoundVolume = { viewModel.updateFinalSoundVolume(it) },
+                onPrivacyConsentChange = onPrivacyConsentChange,
                 onDismiss = { showSettingsDialog = false }
             )
         }

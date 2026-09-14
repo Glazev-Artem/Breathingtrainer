@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
+import androidx.core.content.edit
 import com.glazev.breathingtrainer.MainActivity
 import com.glazev.breathingtrainer.R
 import com.glazev.breathingtrainer.model.DefaultTechniques
@@ -33,10 +34,9 @@ class BreathingAppWidgetProvider : AppWidgetProvider() {
         fun setSelectedTechniqueIndex(context: Context, index: Int) {
             val size = DefaultTechniques.list.size
             val normalizedIndex = if (size > 0) (index % size + size) % size else 0
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putInt(PREF_KEY_INDEX, normalizedIndex)
-                .apply()
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
+                putInt(PREF_KEY_INDEX, normalizedIndex)
+            }
         }
 
         fun updateAllWidgets(context: Context) {

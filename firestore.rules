@@ -1,0 +1,64 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedInAs(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function missing(data, field) {
+      return !data.keys().hasAny([field]);
+    }
+
+    function optionalString(data, field, maxLength) {
+      return missing(data, field) ||
+        (data[field] is string && data[field].size() <= maxLength);
+    }
+
+    function optionalInt(data, field, minValue, maxValue) {
+      return missing(data, field) ||
+        (data[field] is int && data[field] >= minValue && data[field] <= maxValue);
+    }
+
+    function optionalNumber(data, field, minValue, maxValue) {
+      return missing(data, field) ||
+        (data[field] is number && data[field] >= minValue && data[field] <= maxValue);
+    }
+
+    function validProfile(data) {
+      return data.keys().hasOnly([
+          'schemaVersion', 'updatedAt', 'clientRevision',
+          'selectedVoice', 'selectedMusicId', 'musicVolume', 'breathVolume',
+          'finalSoundVolume', 'finalSoundId', 'vibrationEnabled',
+          'streakCount', 'lastTrainingDate', 'reminderTime', 'dayReminders',
+          'userPresets', 'trainingHistory'
+        ]) &&
+        optionalInt(data, 'schemaVersion', 1, 2) &&
+        (missing(data, 'updatedAt') || data.updatedAt is timestamp) &&
+        optionalInt(data, 'clientRevision', 0, 9999999999999) &&
+        (missing(data, 'selectedVoice') || data.selectedVoice in ['Male', 'Female']) &&
+        (missing(data, 'selectedMusicId') ||
+          data.selectedMusicId in ['none', 'main', 'bg1', 'bg2', 'bg3', 'bg4', 'bg5']) &&
+        optionalNumber(data, 'musicVolume', 0, 1) &&
+        optionalNumber(data, 'breathVolume', 0, 1) &&
+        optionalNumber(data, 'finalSoundVolume', 0, 1) &&
+        (missing(data, 'finalSoundId') || data.finalSoundId in ['final1', 'final2', 'final3']) &&
+        (missing(data, 'vibrationEnabled') || data.vibrationEnabled is bool) &&
+        optionalInt(data, 'streakCount', 0, 100000) &&
+        optionalInt(data, 'lastTrainingDate', 0, 9999999999999) &&
+        optionalString(data, 'reminderTime', 5) &&
+        (missing(data, 'dayReminders') ||
+          (data.dayReminders is map && data.dayReminders.size() <= 64)) &&
+        (missing(data, 'userPresets') ||
+          (data.userPresets is list && data.userPresets.size() <= 50)) &&
+        (missing(data, 'trainingHistory') ||
+          (data.trainingHistory is list && data.trainingHistory.size() <= 100));
+    }
+
+    match /users/{userId} {
+      allow read: if signedInAs(userId);
+      allow create, update: if signedInAs(userId) && validProfile(request.resource.data);
+      allow delete: if false;
+    }
+  }
+}

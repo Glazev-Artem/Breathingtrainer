@@ -14,9 +14,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.glazev.breathingtrainer.privacy.PrivacyConsent
 
 @Composable
-fun NavGraph(viewModel: BreathingViewModel, startDestination: String = "settings") {
+fun NavGraph(
+    viewModel: BreathingViewModel,
+    startDestination: String = "settings",
+    privacyConsent: PrivacyConsent,
+    onPrivacyConsentChange: (PrivacyConsent) -> Unit
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
 
@@ -51,6 +57,8 @@ fun NavGraph(viewModel: BreathingViewModel, startDestination: String = "settings
             } else {
                 SettingsScreen(
                     viewModel = viewModel,
+                    privacyConsent = privacyConsent,
+                    onPrivacyConsentChange = onPrivacyConsentChange,
                     onStartClick = {
                         val activity = context as? Activity
                         if (activity != null) {
@@ -66,6 +74,8 @@ fun NavGraph(viewModel: BreathingViewModel, startDestination: String = "settings
         composable("training") {
             BreathingScreen(
                 viewModel = viewModel,
+                privacyConsent = privacyConsent,
+                onPrivacyConsentChange = onPrivacyConsentChange,
                 onBackClick = {
                     viewModel.stopTraining()
                     navController.popBackStack()

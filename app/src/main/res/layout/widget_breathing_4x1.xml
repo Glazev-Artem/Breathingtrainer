@@ -7,11 +7,12 @@
     android:padding="8dp">
 
     <!-- 1. Строка выбора режима -->
-    <LinearLayout
+    <GridLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="@drawable/bg_widget_selector"
+        android:columnCount="3"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="4dp">
@@ -20,8 +21,9 @@
             android:id="@+id/widget_btn_prev_technique"
             android:layout_width="40dp"
             android:layout_height="match_parent"
+            android:layout_gravity="fill"
             android:gravity="center"
-            android:text="◄"
+            android:text="@string/widget_previous_technique"
             android:textColor="#00E5FF"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -30,11 +32,12 @@
             android:id="@+id/widget_tv_technique_title"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_columnWeight="1"
+            android:layout_gravity="fill"
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"
-            android:text="Квадратное дыхание (4-4-4-4)"
+            android:text="@string/widget_default_technique"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -43,19 +46,21 @@
             android:id="@+id/widget_btn_next_technique"
             android:layout_width="40dp"
             android:layout_height="match_parent"
+            android:layout_gravity="fill"
             android:gravity="center"
-            android:text="►"
+            android:text="@string/widget_next_technique"
             android:textColor="#00E5FF"
             android:textSize="18sp"
             android:textStyle="bold" />
-    </LinearLayout>
+    </GridLayout>
 
     <!-- 2. Кнопки ЗАПУСК и SOS -->
-    <LinearLayout
+    <GridLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:layout_marginTop="8dp"
+        android:columnCount="2"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -64,10 +69,11 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginEnd="4dp"
-            android:layout_weight="1"
+            android:layout_columnWeight="1"
+            android:layout_gravity="fill"
             android:background="@drawable/bg_widget_start_btn"
             android:gravity="center"
-            android:text="ЗАПУСК"
+            android:text="@string/widget_start"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -77,13 +83,14 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginStart="4dp"
-            android:layout_weight="1"
+            android:layout_columnWeight="1"
+            android:layout_gravity="fill"
             android:background="@drawable/bg_widget_sos_btn"
             android:gravity="center"
-            android:text="🆘 SOS (4-7-8)"
+            android:text="@string/widget_sos"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:textStyle="bold" />
-    </LinearLayout>
+    </GridLayout>
 
 </LinearLayout>

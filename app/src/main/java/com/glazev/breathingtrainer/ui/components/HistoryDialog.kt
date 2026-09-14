@@ -89,10 +89,24 @@ fun HistoryDialog(
 
                 val wimHofHistory = history.filter { it.techniqueName == "Вим Хоф" && it.retentions.isNotEmpty() }
                 if (wimHofHistory.isNotEmpty()) {
+                    val retentionRecord = wimHofHistory.flatMap { it.retentions }.maxOrNull() ?: 0
+                    val recordMinutes = retentionRecord / 60
+                    val recordSeconds = retentionRecord % 60
                     Text(
                         text = "ПРОГРЕСС ЗАДЕРЖКИ (СЕК)",
                         color = LightCyan,
                         fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Text(
+                        text = if (recordMinutes > 0) {
+                            "Личный рекорд: ${recordMinutes}м ${recordSeconds}с"
+                        } else {
+                            "Личный рекорд: ${recordSeconds}с"
+                        },
+                        color = White,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -222,7 +236,9 @@ fun RetentionChart(history: List<TrainingRecord>) {
 
 @Composable
 fun CalendarHeader(currentMonth: Calendar, onMonthChange: (Int) -> Unit) {
-    val monthName = SimpleDateFormat("LLLL yyyy", Locale("ru")).format(currentMonth.time).replaceFirstChar { it.uppercase() }
+    val monthName = SimpleDateFormat("LLLL yyyy", Locale.forLanguageTag("ru"))
+        .format(currentMonth.time)
+        .replaceFirstChar { it.uppercase() }
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = { onMonthChange(-1) }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = LightCyan) }
         Text(text = monthName, color = LightCyan, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = BroadleafFontFamily)
@@ -316,7 +332,7 @@ fun DayDetailsDialog(
     onCancelReminderClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sdfDate = SimpleDateFormat("dd MMMM yyyy", Locale("ru"))
+    val sdfDate = SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("ru"))
     val calendar = Calendar.getInstance().apply {
         val parts = dateStr.split("-")
         set(Calendar.YEAR, parts[0].toInt())

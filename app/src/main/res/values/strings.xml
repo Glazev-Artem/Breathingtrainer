@@ -14,4 +14,10 @@
     -->
     <string name="default_web_client_id">922903918125-819jsb9qrf2qmc81n6d8vopl6m4njpdr.apps.googleusercontent.com</string>
 
+    <string name="widget_previous_technique">&#x25C0;</string>
+    <string name="widget_next_technique">&#x25B6;</string>
+    <string name="widget_default_technique">Квадратное дыхание (4–4–4–4)</string>
+    <string name="widget_start">ЗАПУСК</string>
+    <string name="widget_sos">🆘 SOS (4–7–8)</string>
+
 </resources>

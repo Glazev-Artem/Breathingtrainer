@@ -22,6 +22,14 @@ local.properties
 google-services.json
 **/google-services.json
 
+# Firebase local/deployment state
+.firebase/
+firebase-debug.log
+functions/node_modules/
+functions/.env*
+!functions/.env.example
+functions/functions.yaml
+
 # Build outputs & Signing keys
 *.apk
 *.aab

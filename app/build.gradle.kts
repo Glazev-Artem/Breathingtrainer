@@ -13,41 +13,42 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+fun configuredValue(name: String): String =
+    providers.gradleProperty(name)
+        .orElse(providers.environmentVariable(name))
+        .orNull
+        ?: localProperties.getProperty(name).orEmpty()
+
+val appMetricaKey = configuredValue("APPMETRICA_API_KEY")
+val squareAdId = configuredValue("YANDEX_SQUARE_AD_ID")
+val interstitialAdId = configuredValue("YANDEX_INTERSTITIAL_AD_ID")
+val yandexClientId = configuredValue("YANDEX_CLIENT_ID")
+val vkAppId = configuredValue("VK_APP_ID")
+val authExchangeUrl = configuredValue("AUTH_EXCHANGE_URL")
+
 android {
     namespace = "com.glazev.breathingtrainer"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.glazev.breathingtrainer"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 2
         versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val appMetricaKey = localProperties.getProperty("APPMETRICA_API_KEY") ?: ""
-        val bannerAdId = localProperties.getProperty("YANDEX_BANNER_AD_ID") ?: ""
-        val squareAdId = localProperties.getProperty("YANDEX_SQUARE_AD_ID") ?: ""
-        val interstitialAdId = localProperties.getProperty("YANDEX_INTERSTITIAL_AD_ID") ?: ""
-        val yandexClientId = localProperties.getProperty("YANDEX_CLIENT_ID") ?: ""
-        val vkAppId = localProperties.getProperty("VK_APP_ID") ?: ""
-        val vkClientSecret = localProperties.getProperty("VK_CLIENT_SECRET") ?: ""
-
         buildConfigField("String", "APPMETRICA_API_KEY", "\"$appMetricaKey\"")
-        buildConfigField("String", "YANDEX_BANNER_AD_ID", "\"$bannerAdId\"")
         buildConfigField("String", "YANDEX_SQUARE_AD_ID", "\"$squareAdId\"")
         buildConfigField("String", "YANDEX_INTERSTITIAL_AD_ID", "\"$interstitialAdId\"")
-        buildConfigField("String", "YANDEX_CLIENT_ID", "\"$yandexClientId\"")
-        buildConfigField("String", "VK_APP_ID", "\"$vkAppId\"")
-
-        val vkAppIdInt = vkAppId.toIntOrNull() ?: 0
-        resValue("integer", "vk_app_id", vkAppIdInt.toString())
-        resValue("string", "vk_client_secret", vkClientSecret.ifEmpty { "placeholder" })
+        buildConfigField("String", "AUTH_EXCHANGE_URL", "\"$authExchangeUrl\"")
 
         manifestPlaceholders["YANDEX_CLIENT_ID"] = yandexClientId.ifEmpty { "placeholder" }
         manifestPlaceholders["VKIDClientID"] = vkAppId.ifEmpty { "0" }
-        manifestPlaceholders["VKIDClientSecret"] = vkClientSecret.ifEmpty { "secret" }
+        // The SDK requires a non-empty legacy placeholder even when the OAuth 2.1
+        // authorization-code + PKCE flow performs token exchange on our backend.
+        manifestPlaceholders["VKIDClientSecret"] = "pkce-public-client"
         manifestPlaceholders["VKIDRedirectHost"] = "vk.com"
         manifestPlaceholders["VKIDRedirectScheme"] = "vk" + (vkAppId.ifEmpty { "0" })
     }
@@ -55,6 +56,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -74,6 +76,39 @@ android {
     }
 }
 
+val validateReleaseConfiguration by tasks.registering {
+    group = "verification"
+    description = "Fails release builds when production service configuration is missing or malformed."
+    inputs.properties(
+        mapOf(
+            "APPMETRICA_API_KEY" to appMetricaKey,
+            "YANDEX_SQUARE_AD_ID" to squareAdId,
+            "YANDEX_INTERSTITIAL_AD_ID" to interstitialAdId,
+            "YANDEX_CLIENT_ID" to yandexClientId,
+            "VK_APP_ID" to vkAppId,
+            "AUTH_EXCHANGE_URL" to authExchangeUrl
+        )
+    )
+    doLast {
+        val configuration = inputs.properties.mapValues { (_, value) -> value.toString() }
+        val missing = configuration.filterValues { it.isBlank() }.keys
+        check(missing.isEmpty()) {
+            "Missing release configuration: ${missing.joinToString()}. " +
+                "Set Gradle properties, environment variables, or local.properties."
+        }
+        check(configuration.getValue("VK_APP_ID").toLongOrNull()?.let { it > 0 } == true) {
+            "VK_APP_ID must be a positive numeric application ID."
+        }
+        check(configuration.getValue("AUTH_EXCHANGE_URL").startsWith("https://")) {
+            "AUTH_EXCHANGE_URL must use HTTPS."
+        }
+    }
+}
+
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    dependsOn(validateReleaseConfiguration)
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -90,7 +125,6 @@ dependencies {
     
     // Media (Sound)
     implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
     
     // Реклама и Авторизация Яндекса
@@ -104,11 +138,13 @@ dependencies {
     // RuStore Pay SDK
     implementation(libs.rustore.pay)
 
-    // Firebase & Google Auth
-    implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.android.gms:play-services-auth:21.1.1")
+    // Firebase & Google Credential Manager
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.id)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

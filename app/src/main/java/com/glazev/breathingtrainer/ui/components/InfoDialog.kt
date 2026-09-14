@@ -1,6 +1,5 @@
 package com.glazev.breathingtrainer.ui.components
 
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,7 +25,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.glazev.breathingtrainer.AppLinks
 import com.glazev.breathingtrainer.R
+import com.glazev.breathingtrainer.BuildConfig
+import com.glazev.breathingtrainer.openExternalLink
+import com.glazev.breathingtrainer.privacy.PrivacyConsent
 import com.glazev.breathingtrainer.ui.BackgroundMusic
 import com.glazev.breathingtrainer.ui.theme.*
 import java.util.Calendar
@@ -81,8 +84,29 @@ fun InfoDialog(onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Лавка приложений", color = White.copy(alpha = 0.5f), fontSize = 12.sp)
-                    Text("Версия 1.2.2", color = White.copy(alpha = 0.5f), fontSize = 12.sp)
+                    Text(
+                        text = "Лавка приложений",
+                        color = LightCyan,
+                        fontSize = 12.sp,
+                        textDecoration = TextDecoration.Underline,
+                        modifier = Modifier
+                            .clickable {
+                                context.openExternalLink(AppLinks.RUSTORE_DEVELOPER_PAGE)
+                            }
+                            .padding(vertical = 4.dp)
+                    )
+                    Text("Версия ${BuildConfig.VERSION_NAME}", color = White.copy(alpha = 0.5f), fontSize = 12.sp)
+                    Text(
+                        text = "Политика конфиденциальности",
+                        color = LightCyan,
+                        fontSize = 12.sp,
+                        textDecoration = TextDecoration.Underline,
+                        modifier = Modifier
+                            .clickable {
+                                context.openExternalLink(AppLinks.PRIVACY_POLICY)
+                            }
+                            .padding(vertical = 4.dp)
+                    )
                    // Text("Автор: Путилов Денис, Глазьев Артём", color = White.copy(alpha = 0.5f), fontSize = 12.sp)
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -101,8 +125,7 @@ fun InfoDialog(onDismiss: () -> Unit) {
                         textDecoration = TextDecoration.Underline,
                         modifier = Modifier
                             .clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/Applavka"))
-                                context.startActivity(intent)
+                                context.openExternalLink(AppLinks.TELEGRAM)
                             }
                             .padding(vertical = 4.dp)
                     )
@@ -114,8 +137,7 @@ fun InfoDialog(onDismiss: () -> Unit) {
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://vk.ru/applavka"))
-                                context.startActivity(intent)
+                                context.openExternalLink(AppLinks.VK)
                             }
                             .padding(vertical = 4.dp)
                     )
@@ -149,6 +171,7 @@ private fun InfoSection(title: String, content: String) {
 fun SettingsDialog(
     isPremium: Boolean,
     userEmail: String?,
+    authProviderLabel: String?,
     isSyncing: Boolean,
     monthlyPrice: String,
     lifetimePrice: String,
@@ -159,6 +182,7 @@ fun SettingsDialog(
     finalSound: BackgroundMusic?,
     finalSoundVolume: Float,
     availableFinalSounds: List<BackgroundMusic>,
+    privacyConsent: PrivacyConsent,
     onMusicVolumeChange: (Float) -> Unit,
     onBreathVolumeChange: (Float) -> Unit,
     onVibrationEnabledChange: (Boolean) -> Unit,
@@ -175,8 +199,10 @@ fun SettingsDialog(
     onAddCustomFinalSound: (Uri) -> Unit,
     onUpdateFinalSound: (BackgroundMusic) -> Unit,
     onUpdateFinalSoundVolume: (Float) -> Unit,
+    onPrivacyConsentChange: (PrivacyConsent) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     var showFinalSoundMenu by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -364,7 +390,11 @@ fun SettingsDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Аккаунт:", color = White.copy(alpha = 0.6f), fontSize = 10.sp)
+                            Text(
+                                text = authProviderLabel?.let { "Аккаунт $it:" } ?: "Аккаунт:",
+                                color = White.copy(alpha = 0.6f),
+                                fontSize = 10.sp
+                            )
                             Text(userEmail, color = White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                         TextButton(onClick = onSignOut) {
@@ -373,6 +403,43 @@ fun SettingsDialog(
                     }
                     if (isSyncing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp).padding(top = 4.dp), color = LightCyan)
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = White.copy(alpha = 0.1f))
+
+                Text("КОНФИДЕНЦИАЛЬНОСТЬ", color = LightCyan, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(12.dp))
+                SettingsPrivacySwitch(
+                    title = "Аналитика приложения",
+                    checked = privacyConsent.analyticsEnabled,
+                    onCheckedChange = { enabled ->
+                        onPrivacyConsentChange(privacyConsent.copy(isDecided = true, analyticsEnabled = enabled))
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                SettingsPrivacySwitch(
+                    title = "Персонализация рекламы",
+                    checked = privacyConsent.personalizedAdsEnabled,
+                    onCheckedChange = { enabled ->
+                        onPrivacyConsentChange(privacyConsent.copy(isDecided = true, personalizedAdsEnabled = enabled))
+                    }
+                )
+                Text(
+                    text = "При выключенной персонализации реклама может оставаться, но согласие на персонализацию не передаётся.",
+                    color = White.copy(alpha = 0.55f),
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Text(
+                    text = "Политика конфиденциальности",
+                    color = LightCyan,
+                    fontSize = 12.sp,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier
+                        .clickable {
+                            context.openExternalLink(AppLinks.PRIVACY_POLICY)
+                        }
+                        .padding(top = 10.dp, bottom = 2.dp)
+                )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = White.copy(alpha = 0.1f))
 
@@ -440,6 +507,32 @@ fun SettingsDialog(
                 showTimePicker = false
             },
             onDismiss = { showTimePicker = false }
+        )
+    }
+}
+
+@Composable
+private fun SettingsPrivacySwitch(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(title, color = White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = LightCyan,
+                checkedTrackColor = MainTeal
+            )
         )
     }
 }

@@ -33,14 +33,13 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.glazev.breathingtrainer.model.PhaseType
+import com.glazev.breathingtrainer.privacy.PrivacyConsent
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
 import com.vk.id.AccessToken
 import com.vk.id.VKID
 import com.vk.id.VKIDAuthFail
 import com.vk.id.auth.AuthCodeData
+import com.vk.id.auth.VKIDAuthParams
 import com.vk.id.auth.VKIDAuthCallback
 import com.yandex.authsdk.YandexAuthLoginOptions
 import com.yandex.authsdk.YandexAuthOptions
@@ -52,6 +51,8 @@ import kotlin.math.ceil
 @Composable
 fun BreathingScreen(
     viewModel: BreathingViewModel,
+    privacyConsent: PrivacyConsent,
+    onPrivacyConsentChange: (PrivacyConsent) -> Unit,
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -59,6 +60,7 @@ fun BreathingScreen(
     var showInfoDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
+    val setReminder = rememberReminderSetter(viewModel)
     val interactionSource = remember { MutableInteractionSource() }
 
     // Перехватываем системную кнопку "Назад" и жесты
@@ -69,17 +71,7 @@ fun BreathingScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val yandexAuthOptions = remember(context) { YandexAuthOptions(context) }
 
-    val googleAuthLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                account.idToken?.let { viewModel.signInWithGoogle(it) }
-            } catch (_: Exception) {}
-        }
-    }
+    val signInWithGoogle = rememberGoogleCredentialSignIn(viewModel::signInWithGoogle)
 
     val yandexAuthLauncher = rememberLauncherForActivityResult(
         contract = YandexAuthSdkContract(yandexAuthOptions)
@@ -186,7 +178,7 @@ fun BreathingScreen(
         label = "pulse_scale"
     )
 
-    Box(modifier = Modifier.fillMaxSize()
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()
         .clickable(
             interactionSource = interactionSource,
             indication = null,
@@ -199,6 +191,14 @@ fun BreathingScreen(
             }
         )
     ) {
+        val compactHeight = maxHeight < 600.dp
+        val outerBreathSize = if (compactHeight) 176.dp else 260.dp
+        val innerBreathSize = if (compactHeight) 162.dp else 240.dp
+        val meditationButtonSize = if (compactHeight) 76.dp else 105.dp
+        val phaseTitleSize = if (compactHeight) 19.sp else 24.sp
+        val timerTextSize = if (compactHeight) 52.sp else 80.sp
+        val bottomPanelHeight = if (compactHeight) 76.dp else 90.dp
+
         Image(
             painter = painterResource(id = R.drawable.bg_main_gradient),
             contentDescription = null,
@@ -210,7 +210,7 @@ fun BreathingScreen(
             Image(
                 painter = painterResource(id = R.drawable.ic_circle_bg),
                 contentDescription = null,
-                modifier = Modifier.offset(y = 40.dp).size(280.dp).scale(pulseScale),
+                modifier = Modifier.offset(y = 40.dp).size(if (compactHeight) 210.dp else 280.dp).scale(pulseScale),
                 alpha = 0.4f
             )
         }
@@ -221,7 +221,7 @@ fun BreathingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = if (compactHeight) 4.dp else 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 IconButton(onClick = { showInfoDialog = true }, modifier = Modifier.align(Alignment.CenterStart).size(40.dp)) {
@@ -249,7 +249,7 @@ fun BreathingScreen(
             HorizontalDivider(color = White.copy(alpha = 0.2f), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
             
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(if (compactHeight) 4.dp else 12.dp))
                 
                 // Стрик (дни подряд)
                 if (uiState.streakCount > 0) {
@@ -292,11 +292,21 @@ fun BreathingScreen(
             Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(1f)) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(contentAlignment = Alignment.Center) {
-                        Image(painter = painterResource(id = R.drawable.ic_breath_shape_1), contentDescription = null, modifier = Modifier.size(260.dp).scale(scale).rotate(rotationClockwise), alpha = 0.6f)
-                        Image(painter = painterResource(id = R.drawable.ic_breath_shape_2), contentDescription = null, modifier = Modifier.size(240.dp).scale(scale * 0.9f).rotate(rotationCounterClockwise), alpha = 0.4f)
+                        Image(painter = painterResource(id = R.drawable.ic_breath_shape_1), contentDescription = null, modifier = Modifier.size(outerBreathSize).scale(scale).rotate(rotationClockwise), alpha = 0.6f)
+                        Image(painter = painterResource(id = R.drawable.ic_breath_shape_2), contentDescription = null, modifier = Modifier.size(innerBreathSize).scale(scale * 0.9f).rotate(rotationCounterClockwise), alpha = 0.4f)
                         
                         if (!uiState.isRunning && !uiState.isCountingDown) {
-                            Image(painter = painterResource(id = R.drawable.ic_meditation), contentDescription = "Продолжить", modifier = Modifier.size(105.dp).clickable { viewModel.startTrainingWithAd(context as Activity, onAdDismissed = { viewModel.startTraining() }) })
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_meditation),
+                                contentDescription = if (uiState.isPaused) "Продолжить" else "Начать тренировку",
+                                modifier = Modifier.size(meditationButtonSize).clickable {
+                                    if (uiState.isPaused) {
+                                        viewModel.resumeTraining()
+                                    } else {
+                                        viewModel.startTrainingWithAd(context as Activity, onAdDismissed = { viewModel.startTraining() })
+                                    }
+                                }
+                            )
                         }
                         
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -320,21 +330,21 @@ fun BreathingScreen(
                                 Text(
                                     text = "ГОТОВНОСТЬ",
                                     color = White,
-                                    fontSize = 24.sp,
+                                    fontSize = phaseTitleSize,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = BroadleafFontFamily
                                 )
                                 Text(
                                     text = seconds.toInt().toString(),
                                     color = White,
-                                    fontSize = 80.sp,
+                                    fontSize = timerTextSize,
                                     fontWeight = FontWeight.Bold
                                 )
                             } else if (uiState.isRunning) {
                                 Text(
                                     text = title,
                                     color = White,
-                                    fontSize = 24.sp,
+                                    fontSize = phaseTitleSize,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = BroadleafFontFamily
                                 )
@@ -347,11 +357,15 @@ fun BreathingScreen(
                                         fontFamily = BroadleafFontFamily
                                     )
                                 }
-                                val displaySeconds = ceil(seconds.toDouble()).toInt()
+                                val displaySeconds = if (uiState.isWimHofRetentionPhase) {
+                                    seconds.coerceAtLeast(0f).toInt()
+                                } else {
+                                    ceil(seconds.toDouble()).toInt()
+                                }
                                 Text(
                                     text = displaySeconds.toString(),
                                     color = White,
-                                    fontSize = 80.sp,
+                                    fontSize = timerTextSize,
                                     fontWeight = FontWeight.Bold
                                 )
                                 
@@ -366,7 +380,7 @@ fun BreathingScreen(
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(60.dp))
+                    Spacer(modifier = Modifier.height(if (compactHeight) 8.dp else 60.dp))
                 }
             }
 
@@ -379,14 +393,14 @@ fun BreathingScreen(
                 Image(
                     painter = painterResource(id = R.drawable.bg_bottom_wave), 
                     contentDescription = null, 
-                    modifier = Modifier.fillMaxWidth().height(90.dp),
+                    modifier = Modifier.fillMaxWidth().height(bottomPanelHeight),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.TopCenter
                 )
                 
                 // Кнопки по углам позиционируются относительно низа волны
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(90.dp).padding(horizontal = 24.dp, vertical = 18.dp),
+                    modifier = Modifier.fillMaxWidth().height(bottomPanelHeight).padding(horizontal = 24.dp, vertical = if (compactHeight) 10.dp else 18.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
@@ -405,7 +419,12 @@ fun BreathingScreen(
                 }
 
                 // Центральная кнопка Плей/Пауза (того же размера и положения, что и Старт на первом экране)
-                Box(modifier = Modifier.padding(bottom = 40.dp).size(105.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .padding(bottom = if (compactHeight) 28.dp else 40.dp)
+                        .size(if (compactHeight) 82.dp else 105.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Image(
                         painter = painterResource(id = R.drawable.knopka_krug), 
                         contentDescription = "Плей Пауза", 
@@ -415,16 +434,19 @@ fun BreathingScreen(
                             onClick = { 
                                 if (uiState.isRunning) {
                                     if (uiState.isWimHofRetentionPhase) viewModel.finishRetention()
-                                    else viewModel.stopTraining()
+                                    else viewModel.pauseTraining()
+                                } else if (uiState.isPaused) {
+                                    viewModel.resumeTraining()
+                                } else {
+                                    viewModel.startTrainingWithAd(context as Activity, onAdDismissed = { viewModel.startTraining() })
                                 }
-                                else viewModel.startTrainingWithAd(context as Activity, onAdDismissed = { viewModel.startTraining() }) 
                             }
                         ), 
                         contentScale = ContentScale.Fit
                     )
                     Image(
                         painter = painterResource(id = if (uiState.isRunning) R.drawable.ic_pause else R.drawable.ic_play),
-                        contentDescription = null,
+                        contentDescription = if (uiState.isRunning) "Пауза" else "Продолжить",
                         modifier = Modifier.size(42.dp)
                     )
                 }
@@ -440,6 +462,7 @@ fun BreathingScreen(
             SettingsDialog(
                 isPremium = uiState.isPremium,
                 userEmail = uiState.userEmail,
+                authProviderLabel = uiState.authProviderLabel,
                 isSyncing = uiState.isSyncing,
                 monthlyPrice = uiState.monthlyPrice,
                 lifetimePrice = uiState.lifetimePrice,
@@ -450,6 +473,7 @@ fun BreathingScreen(
                 finalSound = uiState.finalSound,
                 finalSoundVolume = uiState.finalSoundVolume,
                 availableFinalSounds = viewModel.finalSounds,
+                privacyConsent = privacyConsent,
                 onMusicVolumeChange = { viewModel.updateMusicVolume(it) },
                 onBreathVolumeChange = { viewModel.updateBreathVolume(it) },
                 onVibrationEnabledChange = { viewModel.updateVibrationEnabled(it) },
@@ -457,41 +481,46 @@ fun BreathingScreen(
                 onPurchaseLifetime = { viewModel.purchaseLifetime() },
                 onRestorePurchases = { viewModel.checkPurchases() },
                 onOpenSubscriptions = { viewModel.openRuStoreSubscriptions() },
-                onSignInGoogle = {
-                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                        .requestIdToken(context.getString(R.string.default_web_client_id))
-                        .requestEmail()
-                        .build()
-                    val client = GoogleSignIn.getClient(context, gso)
-                    googleAuthLauncher.launch(client.signInIntent)
-                },
+                onSignInGoogle = signInWithGoogle,
                 onSignInYandex = {
                     yandexAuthLauncher.launch(YandexAuthLoginOptions())
                 },
                 onSignInVK = {
                     try {
+                        val request = viewModel.beginVkAuthorization()
+                        val authParams = VKIDAuthParams.Builder().apply {
+                            codeChallenge = request.codeChallenge
+                            state = request.state
+                        }.build()
                         VKID.instance.authorize(
                             lifecycleOwner = lifecycleOwner,
                             callback = object : VKIDAuthCallback {
                                 override fun onAuth(accessToken: AccessToken) {
-                                    viewModel.signInWithVKToken(accessToken.token, accessToken.userID.toString())
+                                    viewModel.cancelVkAuthorization()
+                                    viewModel.signInWithVKToken(accessToken.token)
                                 }
-                                override fun onAuthCode(data: AuthCodeData, isCompletion: Boolean) {}
+                                override fun onAuthCode(data: AuthCodeData, isCompletion: Boolean) {
+                                    viewModel.signInWithVkAuthorizationCode(data.code, data.deviceId)
+                                }
                                 override fun onFail(fail: VKIDAuthFail) {
+                                    viewModel.cancelVkAuthorization()
                                     Log.e("VKIDAuth", "VK ID sign in failed: $fail")
                                 }
-                            }
+                            },
+                            params = authParams
                         )
                     } catch (e: Exception) {
+                        viewModel.cancelVkAuthorization()
                         Log.e("VKIDAuth", "VK ID launch error", e)
                     }
                 },
                 onSignOut = { viewModel.signOut() },
-                onSetReminder = { h, m -> viewModel.setReminder(h, m) },
+                onSetReminder = { h, m -> setReminder(h, m, null) },
                 onCancelReminder = { viewModel.cancelReminder() },
                 onAddCustomFinalSound = { viewModel.addCustomFinalSound(it) },
                 onUpdateFinalSound = { viewModel.updateFinalSound(it) },
                 onUpdateFinalSoundVolume = { viewModel.updateFinalSoundVolume(it) },
+                onPrivacyConsentChange = onPrivacyConsentChange,
                 onDismiss = { showSettingsDialog = false }
             )
         }
@@ -501,7 +530,7 @@ fun BreathingScreen(
                 history = uiState.trainingHistory,
                 reminderTime = uiState.reminderTime,
                 dayReminders = uiState.dayReminders,
-                onSetReminder = { h, m, date -> viewModel.setReminder(h, m, date) },
+                onSetReminder = setReminder,
                 onCancelReminder = { date -> viewModel.cancelReminder(date) },
                 onDismiss = { showHistoryDialog = false }
             )
